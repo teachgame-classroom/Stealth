@@ -11,15 +11,19 @@ public class Player : MonoBehaviour
     public Transform AimIKTarget;
 
     [Range(0, 1)]
-    public float FootIKWeight;
+    public float RightFootIKWeight;
+
+    [Range(0, 1)]
+    public float LeftFootIKWeight;
+    private float AnimFootIKWeight;
 
     public Transform hipTrans;
 
     private Vector3 leftFootIKPos;
     private Vector3 rightFootIKPos;
 
-    private Vector3 leftFootIKNormal;
-    private Vector3 rightFootIKNormal;
+    private Quaternion leftFootIKRot;
+    private Quaternion rightFootIKRot;
 
     [Range(0, 720)]
     public float rotateSpeed = 180;
@@ -48,10 +52,22 @@ public class Player : MonoBehaviour
 
         isWalking = Input.GetKey(KeyCode.LeftShift);
 
-        leftFootIKPos = GetFootIKPos(transform, transform.up + transform.right * -0.2f, out leftFootIKNormal) + Vector3.up * 0.1f;
-        rightFootIKPos = GetFootIKPos(transform, transform.up + transform.right * 0.2f, out rightFootIKNormal) + Vector3.up * 0.1f;
+        AnimFootIKWeight = anim.GetFloat("FootIKWeight");
 
-        if(Input.GetMouseButtonDown(1))
+        if(AnimFootIKWeight > 0)
+        {
+            leftFootIKPos = GetFootIKPos(transform, transform.up + transform.right * -0.2f, out leftFootIKRot, out LeftFootIKWeight);
+            rightFootIKPos = GetFootIKPos(transform, transform.up + transform.right * 0.2f, out rightFootIKRot, out RightFootIKWeight);
+            RightFootIKWeight *= AnimFootIKWeight;
+            LeftFootIKWeight *= AnimFootIKWeight;
+        }
+        else
+        {
+            RightFootIKWeight = 0;
+            LeftFootIKWeight = 0;
+        }
+
+        if (Input.GetMouseButtonDown(1))
         {
             StartAim();
         }
@@ -91,18 +107,18 @@ public class Player : MonoBehaviour
         anim.SetFloat("Speed", directionMag, 0.25f, Time.deltaTime);
     }
 
-    Vector3 GetFootIKPos(Transform hipTrans, Vector3 offset, out Vector3 normal)
+    Vector3 GetFootIKPos(Transform hipTrans, Vector3 offset, out Quaternion IKRot, out float IKWeight)
     {
         RaycastHit hit;
-        if(Physics.Raycast(hipTrans.position + offset, Vector3.down, out hit, 1.1f))
+        if(Physics.Raycast(hipTrans.position + offset, Vector3.down, out hit, 1.3f))
         {
-            normal = hit.normal;
-            FootIKWeight = 1;
-            return hit.point;
+            IKRot = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
+            IKWeight = 1;
+            return hit.point + hit.normal * 0.12f;
         }
-        normal = Vector3.zero;
-        FootIKWeight = 0;
-        return hit.point;
+        IKRot = transform.rotation;
+        IKWeight = 0;
+        return hit.point + hit.normal * 0.12f;
     }
 
     void StartAim()
@@ -176,18 +192,17 @@ public class Player : MonoBehaviour
         anim.SetIKRotationWeight(AvatarIKGoal.RightHand, AimIKWeight);
         anim.SetIKRotation(AvatarIKGoal.RightHand, AimIKTarget.rotation);
 
-        anim.SetIKPositionWeight(AvatarIKGoal.LeftFoot, FootIKWeight);
+        anim.SetIKPositionWeight(AvatarIKGoal.LeftFoot, LeftFootIKWeight);
         anim.SetIKPosition(AvatarIKGoal.LeftFoot, leftFootIKPos);
 
-        anim.SetIKPositionWeight(AvatarIKGoal.RightFoot, FootIKWeight);
+        anim.SetIKPositionWeight(AvatarIKGoal.RightFoot, RightFootIKWeight);
         anim.SetIKPosition(AvatarIKGoal.RightFoot, rightFootIKPos);
 
-        anim.SetIKRotationWeight(AvatarIKGoal.LeftFoot, AimIKWeight);
-        anim.SetIKRotation(AvatarIKGoal.LeftFoot, Quaternion.FromToRotation(Vector3.right, leftFootIKNormal));
+        anim.SetIKRotationWeight(AvatarIKGoal.LeftFoot, LeftFootIKWeight);
+        anim.SetIKRotation(AvatarIKGoal.LeftFoot, leftFootIKRot);
 
-        anim.SetIKRotationWeight(AvatarIKGoal.RightFoot, AimIKWeight);
-        anim.SetIKRotation(AvatarIKGoal.RightFoot, Quaternion.FromToRotation(Vector3.right, rightFootIKNormal));
-
+        anim.SetIKRotationWeight(AvatarIKGoal.RightFoot, RightFootIKWeight);
+        anim.SetIKRotation(AvatarIKGoal.RightFoot, rightFootIKRot);
     }
 
     void OnDrawGizmos()
