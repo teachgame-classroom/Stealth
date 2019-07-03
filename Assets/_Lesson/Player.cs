@@ -4,7 +4,17 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    public float lookAngle = 75f;
+    public float lookRange = 10f;
+
     public AnimationCurve aimCurve;
+
+    public Transform lookTargetTrans;
+    private Vector3 lookTargetPos;
+
+    [Range(0, 1)]
+    public float lookIKWeight;
+    private float lookIKWeight_Current;
 
     [Range(0, 1)]
     public float AimIKWeight;
@@ -54,7 +64,7 @@ public class Player : MonoBehaviour
 
         AnimFootIKWeight = anim.GetFloat("FootIKWeight");
 
-        if(AnimFootIKWeight > 0)
+        if(AnimFootIKWeight > 0.1f)
         {
             leftFootIKPos = GetFootIKPos(transform, transform.up + transform.right * -0.2f, out leftFootIKRot, out LeftFootIKWeight);
             rightFootIKPos = GetFootIKPos(transform, transform.up + transform.right * 0.2f, out rightFootIKRot, out RightFootIKWeight);
@@ -66,6 +76,8 @@ public class Player : MonoBehaviour
             RightFootIKWeight = 0;
             LeftFootIKWeight = 0;
         }
+
+        FindLookInterestPoint();
 
         if (Input.GetMouseButtonDown(1))
         {
@@ -105,6 +117,32 @@ public class Player : MonoBehaviour
 
         //anim.SetFloat("Speed", v);
         anim.SetFloat("Speed", directionMag, 0.25f, Time.deltaTime);
+    }
+
+    void FindLookInterestPoint()
+    {
+        Collider[] cols = Physics.OverlapSphere(transform.position, lookRange);
+
+        for(int i = 0; i < cols.Length; i++)
+        {
+            Vector3 direction = (cols[i].transform.position - transform.position).normalized;
+
+            if(Vector3.Angle(transform.forward, direction) < lookAngle)
+            {
+                LookInterestPointMarker lookInterestPointMarker = cols[i].GetComponentInChildren<LookInterestPointMarker>();
+
+                if (lookInterestPointMarker)
+                {
+                    lookTargetTrans = lookInterestPointMarker.transform;
+                    lookTargetPos = lookTargetTrans.position;
+                    lookIKWeight = 1;
+                    return;
+                }
+            }
+        }
+
+        lookIKWeight = 0;
+        //lookTargetTrans = null;
     }
 
     Vector3 GetFootIKPos(Transform hipTrans, Vector3 offset, out Quaternion IKRot, out float IKWeight)
@@ -203,6 +241,20 @@ public class Player : MonoBehaviour
 
         anim.SetIKRotationWeight(AvatarIKGoal.RightFoot, RightFootIKWeight);
         anim.SetIKRotation(AvatarIKGoal.RightFoot, rightFootIKRot);
+
+        Debug.Log(lookIKWeight_Current);
+
+        if(true)
+        {
+            lookIKWeight_Current = Mathf.MoveTowards(lookIKWeight_Current, lookIKWeight, 2 * Time.deltaTime);
+            anim.SetLookAtWeight(lookIKWeight_Current);
+            anim.SetLookAtPosition(lookTargetPos);
+        }
+        else
+        {
+            lookIKWeight_Current = Mathf.MoveTowards(lookIKWeight_Current, lookIKWeight, 2 * Time.deltaTime);
+            anim.SetLookAtWeight(lookIKWeight_Current);
+        }
     }
 
     void OnDrawGizmos()
@@ -210,6 +262,17 @@ public class Player : MonoBehaviour
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(leftFootIKPos, 0.1f);
         Gizmos.DrawWireSphere(rightFootIKPos, 0.1f);
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position, lookRange);
+
+        Gizmos.color = Color.red;
+        Vector3 leftSightBorder = Quaternion.Euler(0, lookAngle, 0) * transform.forward;
+        Gizmos.DrawLine(transform.position, transform.position + leftSightBorder * lookRange);
+
+        Vector3 rightSightBorder = Quaternion.Euler(0, -lookAngle, 0) * transform.forward;
+        Gizmos.DrawLine(transform.position, transform.position + rightSightBorder * lookRange);
+
     }
 
 }
