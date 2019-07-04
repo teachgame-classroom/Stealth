@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    public int Health = 100;
+
     public float lookAngle = 75f;
     public float lookRange = 10f;
 
@@ -47,16 +49,21 @@ public class Player : MonoBehaviour
     public Transform gunHolderTrans;
     public Transform gunAimPosTrans;
 
+    private AudioSource audioSource;
+
     // Start is called before the first frame update
     void Start()
     {
         anim = GetComponent<Animator>();
         camTrans = Camera.main.transform;
+        audioSource = GetComponent<AudioSource>();
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (Health <= 0) return;
+
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
@@ -98,6 +105,7 @@ public class Player : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.C))
         {
             anim.SetTrigger("Shout");
+            audioSource.Play();
         }
 
 
@@ -157,6 +165,16 @@ public class Player : MonoBehaviour
         IKRot = transform.rotation;
         IKWeight = 0;
         return hit.point + hit.normal * 0.12f;
+    }
+
+    public void TakeDamage(int damage)
+    {
+        Health -= damage;
+        if(Health <= 0)
+        {
+            GetComponent<Collider>().enabled = false;
+            anim.SetTrigger("Die");
+        }
     }
 
     void StartAim()
