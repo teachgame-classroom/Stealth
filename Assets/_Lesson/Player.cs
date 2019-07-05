@@ -5,6 +5,7 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
     public int Health = 100;
+    public bool hasKey;
 
     public float lookAngle = 75f;
     public float lookRange = 10f;
@@ -51,6 +52,9 @@ public class Player : MonoBehaviour
 
     private AudioSource audioSource;
 
+    public AudioClip pickupSound;
+    public AudioClip shoutSound;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -63,6 +67,12 @@ public class Player : MonoBehaviour
     void Update()
     {
         if (Health <= 0) return;
+
+        if(GameController.isLeaving)
+        {
+            anim.SetFloat("Speed", 0, 0.25f, Time.deltaTime);
+            return;
+        }
 
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
@@ -105,7 +115,8 @@ public class Player : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.C))
         {
             anim.SetTrigger("Shout");
-            audioSource.Play();
+            AudioSource.PlayClipAtPoint(shoutSound, transform.position);
+            //audioSource.Play();
         }
 
 
@@ -187,6 +198,14 @@ public class Player : MonoBehaviour
         StartCoroutine(EndAimCoroutine());
     }
 
+    public void OnAnimationEvent(string eventName)
+    {
+        if(eventName == "FootStep")
+        {
+            audioSource.Play();
+        }
+    }
+
     IEnumerator AimCoroutine()
     {
         float time = 0;
@@ -260,7 +279,7 @@ public class Player : MonoBehaviour
         anim.SetIKRotationWeight(AvatarIKGoal.RightFoot, RightFootIKWeight);
         anim.SetIKRotation(AvatarIKGoal.RightFoot, rightFootIKRot);
 
-        Debug.Log(lookIKWeight_Current);
+        //Debug.Log(lookIKWeight_Current);
 
         if(true)
         {
@@ -272,6 +291,16 @@ public class Player : MonoBehaviour
         {
             lookIKWeight_Current = Mathf.MoveTowards(lookIKWeight_Current, lookIKWeight, 2 * Time.deltaTime);
             anim.SetLookAtWeight(lookIKWeight_Current);
+        }
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        if(other.tag == "Key")
+        {
+            AudioSource.PlayClipAtPoint(pickupSound, transform.position);
+            Destroy(other.gameObject);
+            hasKey = true;
         }
     }
 

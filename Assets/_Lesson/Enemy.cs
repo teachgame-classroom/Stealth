@@ -7,7 +7,6 @@ public class Enemy : MonoBehaviour
 {
     public static List<Enemy> enemies = new List<Enemy>();
 
-    public static bool isAlarm;
     public bool isShooting;
     public AudioClip shotClip;
 
@@ -15,8 +14,6 @@ public class Enemy : MonoBehaviour
 
     private bool doingDamage;
 
-    public float alarmDuration = 10f;
-    private float alarmTimer = 0;
 
     public float lookRange = 10;
     public float lookAngle = 45;
@@ -28,7 +25,7 @@ public class Enemy : MonoBehaviour
 
     public PathManager pathManager;
     private Transform[] waypoints;
-    private int currentWaypoint = -1;
+    private int currentWaypoint = 0;
 
     public AnimationCurve ikWeightCurve;
 
@@ -70,25 +67,17 @@ public class Enemy : MonoBehaviour
     {
         CheckPlayerDirection();
 
-        if(!isAlarm)
+        if(!GameController.isAlarm)
         {
             if(CanSpotPlayer())
             {
-                isAlarm = true;
-                alarmTimer = alarmDuration;
+                GameController.SetAlarm();
             }
 
             Patrol();
         }
         else
         {
-            alarmTimer -= Time.deltaTime;
-
-            if(alarmTimer < 0)
-            {
-                isAlarm = false;
-            }
-
             if(!isShooting)
             {
                 ChasePlayer();
@@ -97,8 +86,6 @@ public class Enemy : MonoBehaviour
             {
                 if(CanSpotPlayer())
                 {
-                    alarmTimer = alarmDuration;
-
                     if(CanSeePlayer())
                     {
                         agent.isStopped = true;
@@ -196,7 +183,7 @@ public class Enemy : MonoBehaviour
 
     void Shoot()
     {
-        anim.SetBool("Shoot", isAlarm && isShooting);
+        anim.SetBool("Shoot", isShooting);
 
         float shot = anim.GetFloat("Shot");
 
@@ -235,9 +222,8 @@ public class Enemy : MonoBehaviour
 
     public void SpotPlayer(Vector3 lastPos)
     {
-        alarmTimer = alarmDuration;
+        GameController.SetAlarm();
         lastPlayerPos = lastPos;
-        isAlarm = true;
     }
 
     bool CanSpotPlayer()
@@ -305,6 +291,11 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    void OnAnimationEvent(string eventName)
+    {
+
+    }
+
     void OnAnimatorIK(int layerIndex)
     {
         IKWeight = anim.GetFloat("AimWeight");
@@ -324,8 +315,4 @@ public class Enemy : MonoBehaviour
         transform.position = agent.nextPosition;
     }
 
-    void OnGUI()
-    {
-        GUI.Label(new Rect(0, 0, Screen.width, Screen.height), string.Format("Alarm:{0}, Timer:{1}", isAlarm, alarmTimer));
-    }
 }

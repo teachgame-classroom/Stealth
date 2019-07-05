@@ -6,4 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/_Lesson/SampleScene.unity
+    guid: d02469b5d053f1c4cb74889c31d04c62
+  - enabled: 1
     path: Assets/Done/DoneScenes/DoneStealth.unity
+    guid: 65954b6251e793f419956b70f6bb1d54
+  m_configObjects: {}

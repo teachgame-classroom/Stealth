@@ -4,12 +4,15 @@ using UnityEngine;
 
 public class LiftTrigger : MonoBehaviour
 {
+    public GameObject lift;
+    private AudioSource audioSource;
     private Animator anim;
 
     // Start is called before the first frame update
     void Start()
     {
-        anim = GetComponent<Animator>();
+        anim = lift.GetComponent<Animator>();
+        audioSource = GetComponent<AudioSource>();
     }
 
     // Update is called once per frame
@@ -20,24 +23,18 @@ public class LiftTrigger : MonoBehaviour
 
     void OnTriggerEnter(Collider collider)
     {
-        if(collider.tag == "Player")
-        {
-            anim.SetBool("Open", true);
-        }
-    }
+        Player player = collider.GetComponent<Player>();
 
-    void OnTriggerExit(Collider other)
-    {
-        if (other.tag == "Player")
+        if (player)
         {
-            anim.SetBool("Open", false);
-            Invoke("Leave", 2f);
+            if(player.hasKey)
+            {
+                anim.SetBool("Open", true);
+            }
+            else
+            {
+                audioSource.Play();
+            }
         }
-    }
-
-    void Leave()
-    {
-        GameObject.Find("Player").transform.parent = transform;
-        anim.SetTrigger("LiftUp");
     }
 }
